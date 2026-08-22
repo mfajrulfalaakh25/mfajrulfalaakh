@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Book Journey</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📖 My Book Journey</h1>
+      <p class="subtitle">Learning English, one book at a time</p>
+    </header>
+
+    <section class="books-section">
+      <h2>Books I'm Reading</h2>
+      <div id="books-list">
+        <p class="loading">Loading books...</p>
+      </div>
+    </section>
+
+    <section class="add-book-section">
+      <h2>Add a New Book</h2>
+      <form id="add-book-form">
+        <input type="text" id="book-title" placeholder="Book title" required>
+        <input type="text" id="book-author" placeholder="Author" required>
+        <button type="submit">Add Book</button>
+      </form>
+    </section>
+
+    <footer>
+      <p>Connected: database.js → server.js → index.html</p>
+      <p class="hint">Run <code>node server.js</code> to start the server</p>
+    </footer>
+  </div>
+
+  <script>
+    // --- Connect to the server ---
+
+    const API = 'http://localhost:3000/api';
+
+    // Fetch all books from the server (server.js → database.js)
+    async function loadBooks() {
+      const booksEl = document.getElementById('books-list');
+      booksEl.innerHTML = '<p class="loading">Loading books...</p>';
+
+      try {
+        const response = await fetch(`${API}/books`);
+        const books = await response.json();
+        booksEl.innerHTML = '';
+
+        if (books.length === 0) {
+          booksEl.innerHTML = '<p class="empty">No books yet. Add one above!</p>';
+          return;
+        }
+
+        books.forEach(book => {
+          const bookCard = document.createElement('div');
+          bookCard.className = 'book-card';
+
+          const statusIcon = book.status === 'read' ? '✅' :
+                            book.status === 'in-progress' ? '📖' : '📚';
+
+          bookCard.innerHTML = `
+            <div class="book-header">
+              <h3>${statusIcon} ${book.title}</h3>
+              <span class="book-status status-${book.status}">${book.status}</span>
+            </div>
+            <p class="book-author">by ${book.author}</p>
+            ${book.dateRead ? `<p class="book-date">Finished: ${book.dateRead}</p>` : ''}
+            <p class="book-notes">${book.notes || 'No notes yet'}</p>
+          `;
+
+          booksEl.appendChild(bookCard);
+        });
+      } catch (error) {
+        booksEl.innerHTML = `<p class="error">Could not connect to server. Is it running? (node server.js)</p>`;
+      }
+    }
+
+    // Add a new book
+    document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('book-title').value;
+      const author = document.getElementById('book-author').value;
+
+      try {
+        const response = await fetch(`${API}/books`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, author })
+        });
+
+        if (response.ok) {
+          document.getElementById('book-title').value = '';
+          document.getElementById('book-author').value = '';
+          loadBooks(); // refresh the list
+        }
+      } catch (error) {
+        alert('Could not connect to server.');
+      }
+    });
+
+    // Load books when the page opens
+    loadBooks();
+  </script>
+</body>
+</html>

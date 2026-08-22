@@ -1,0 +1,192 @@
+/* style.css — Simple, clean styling for your book journey */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ddd;
+}
+
+h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+.subtitle {
+  color: #777;
+  font-size: 1.1rem;
+  margin-top: 5px;
+}
+
+section {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+h2 {
+  font-size: 1.3rem;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+/* Books list */
+.books-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.book-card {
+  border-left: 4px solid #3498db;
+  padding: 15px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.book-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.book-header h3 {
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.book-status {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.status-read {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-in-progress {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-to-read {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.book-author {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 5px;
+}
+
+.book-date {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 5px;
+}
+
+.book-notes {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 8px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+  border-left: 2px solid #ddd;
+}
+
+.loading, .empty {
+  color: #999;
+  text-align: center;
+  padding: 20px;
+}
+
+.error {
+  color: #dc3545;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Add book form */
+.add-book-section form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.add-book-section input {
+  flex: 1;
+  min-width: 150px;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-book-section input:focus {
+  border-color: #3498db;
+}
+
+.add-book-section button {
+  padding: 10px 24px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-book-section button:hover {
+  background: #2980b9;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  color: #999;
+  font-size: 0.85rem;
+  padding-top: 20px;
+}
+
+footer .hint {
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+
+footer code {
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
