@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Book Journey</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header (Amazon-style top bar) -->
+  <header>
+    <div class="container">
+      <div class="header-row">
+        <div class="logo">
+          <div class="logo-icon">📚</div>
+          Book Journey
+        </div>
+        <nav class="nav-links">
+          <a href="#">My Books</a>
+          <a href="#">Reading List</a>
+          <a href="#">Notes</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>📖 My Book Journey</h1>
+      <p class="subtitle">Learning English, one book at a time — tracking every page</p>
+    </div>
+
+    <!-- Books Section (Amazon product-card style) -->
+    <section class="books-section">
+      <div class="section-title">
+        📚 Books I'm Reading
+        <span class="badge">Live</span>
+      </div>
+      <div id="books-list" class="books-grid">
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <p>No books yet. Add your first one below!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add Book (Amazon-style search bar feel) -->
+    <section class="add-book-section">
+      <div class="section-title">➕ Add a New Book</div>
+      <form class="add-book-form" id="add-book-form">
+        <input type="text" id="book-title" placeholder="Book title (e.g. 1984)" required autocomplete="off">
+        <input type="text" id="book-author" placeholder="Author (e.g. George Orwell)" required autocomplete="off">
+        <button class="btn btn-primary" type="submit">Add Book</button>
+      </form>
+    </section>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>Connected: database.js → server.js → index.html</p>
+      <p class="hint">Run <code>node server.js</code> to start the server</p>
+      <div class="footer-links">
+        <a href="https://github.com/mfajrulfalaakh25/mfajrulfalaakh" target="_blank">GitHub</a>
+        <a href="#" id="refresh-btn">Refresh</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // --- Connect to the server ---
+
+    const API = 'http://localhost:3000/api';
+
+    // Fetch all books and render them with Amazon-style cards
+    async function loadBooks() {
+      const booksEl = document.getElementById('books-list');
+      booksEl.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>Loading your books...</p></div>';
+
+      try {
+        const response = await fetch(`${API}/books`);
+        const books = await response.json();
+        booksEl.innerHTML = '';
+
+        if (!books || books.length === 0) {
+          booksEl.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">📭</div>
+              <p>No books yet. Add your first one below!</p>
+            </div>`;
+          return;
+        }
+
+        books.forEach(book => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+
+          const statusIcon = book.status === 'read' ? '✅'
+                            : book.status === 'in-progress' ? '📖'
+                            : '📚';
+
+          const ratingStars = book.status === 'read'
+            ? '★★★★★'
+            : book.status === 'in-progress'
+            ? '★★★☆☆'
+            : '☆☆☆☆☆';
+
+          card.innerHTML = `
+            <div class="book-cover ${book.status === 'to-read' ? 'sm' : ''}">
+              📕
+            </div>
+            <div class="book-info">
+              <div class="book-title">${statusIcon} ${escapeHtml(book.title)}</div>
+              <div class="book-author">by ${escapeHtml(book.author)}</div>
+              <div class="book-meta">
+                <span class="book-status status-${book.status}">${book.status}</span>
+                <span class="rating">${ratingStars}</span>
+              </div>
+              ${book.notes ? `
+                <div class="book-notes">
+                  <div class="book-notes-label">📝 Notes</div>
+                  ${escapeHtml(book.notes)}
+                </div>` : ''}
+              ${book.dateRead ? `<div class="book-date">Finished: ${book.dateRead}</div>` : ''}
+            </div>
+            <div class="book-actions">
+              <button class="btn btn-primary btn-sm" onclick="markAsRead(${book.id})">
+                Mark Read
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="deleteBook(${book.id})">
+                ✕
+              </button>
+            </div>
+          `;
+
+          booksEl.appendChild(card);
+        });
+      } catch (error) {
+        booksEl.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚠️</div>
+            <p>Could not connect to server. Is it running?</p>
+            <p style="font-size:0.8rem; margin-top:4px;">Run: <code>node server.js</code></p>
+          </div>`;
+      }
+    }
+
+    // Helper: escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Add a new book
+    document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('book-title').value.trim();
+      const author = document.getElementById('book-author').value.trim();
+
+      if (!title || !author) return;
+
+      try {
+        const response = await fetch(`${API}/books`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, author })
+        });
+
+        if (response.ok) {
+          document.getElementById('book-title').value = '';
+          document.getElementById('book-author').value = '';
+          loadBooks();
+        } else {
+          alert('Failed to add book.');
+        }
+      } catch (error) {
+        alert('Could not connect to server.');
+      }
+    });
+
+    // Mark a book as read
+    async function markAsRead(bookId) {
+      try {
+        await fetch(`${API}/books/${bookId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'read' })
+        });
+        loadBooks();
+      } catch (error) {
+        alert('Could not update book.');
+      }
+    }
+
+    // Delete a book
+    async function deleteBook(bookId) {
+      if (!confirm('Remove this book from your list?')) return;
+      try {
+        await fetch(`${API}/books/${bookId}`, { method: 'DELETE' });
+        loadBooks();
+      } catch (error) {
+        alert('Could not delete book.');
+      }
+    }
+
+    // Refresh button
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      loadBooks();
+    });
+
+    // Load books on page open
+    loadBooks();
+  </script>
+</body>
+</html>
