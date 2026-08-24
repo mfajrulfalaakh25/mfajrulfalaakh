@@ -1,0 +1,68 @@
+# AWS Deployment Workflow
+# Triggers on every push to main — deploys the Book Journey app to EC2
+
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Also allow manual trigger from GitHub Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- 1. Check out the code ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 2. Set up SSH connection to EC2 ---
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # --- 3. Add EC2 host to known_hosts (avoid "Are you sure?" prompt) ---
+      - name: Add EC2 to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # --- 4. Deploy to EC2 ---
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            # Navigate to the app directory
+            cd /home/ubuntu/book-journey
+
+            # Pull the latest code
+            git pull origin main
+
+            # Install dependencies (if package.json exists)
+            if [ -f package.json ]; then
+              npm install --production
+            fi
+
+            # Restart the server (stops old, starts new)
+            pkill -f "node server.js" || true
+            nohup node server.js > server.log 2>&1 &
+
+            echo "✅ Deployment complete at $(date)"
+          EOF
+
+      # --- 5. Health check — verify the server is responding ---
+      - name: Health check
+        run: |
+          sleep 5
+          for i in 1 2 3 4 5; do
+            if curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3000/ | grep -q "200"; then
+              echo "✅ Server is up and running!"
+              exit 0
+            fi
+            echo "Attempt $i — waiting..."
+            sleep 3
+          done
+          echo "❌ Server did not respond after 5 attempts"
+          exit 1
