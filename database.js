@@ -84,6 +84,19 @@ function updateBookStatus(id, status) {
   return book;
 }
 
+function deleteBook(id) {
+  const index = books.findIndex(b => b.id === id);
+  if (index === -1) return null;
+  const removed = books.splice(index, 1)[0];
+  // Also remove related notes
+  const notesToRemove = notes.filter(n => n.bookId === id);
+  notesToRemove.forEach(n => {
+    const idx = notes.indexOf(n);
+    if (idx !== -1) notes.splice(idx, 1);
+  });
+  return removed;
+}
+
 // Export so server.js can use this
 module.exports = {
   getAllBooks,
@@ -91,5 +104,6 @@ module.exports = {
   getNotesForBook,
   addNote,
   addBook,
-  updateBookStatus
+  updateBookStatus,
+  deleteBook
 };

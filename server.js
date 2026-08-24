@@ -1,5 +1,4 @@
 // server.js — The web server that connects to database.js
-// It listens for requests and sends back data from the database.
 
 const http = require('http');
 const database = require('./database');
@@ -8,7 +7,6 @@ const path = require('path');
 
 const PORT = 3000;
 
-// Helper: read a file and send it as response
 function sendFile(res, filePath, contentType) {
   fs.readFile(filePath, (err, data) => {
     if (err) {
@@ -21,13 +19,11 @@ function sendFile(res, filePath, contentType) {
   });
 }
 
-// Helper: send JSON response
 function sendJSON(res, data, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
 }
 
-// Parse JSON body from a request
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -42,97 +38,83 @@ function parseBody(req) {
   });
 }
 
-// Handle incoming requests
 async function handleRequest(req, res) {
   const url = req.url;
   const method = req.method;
 
   console.log(`${method} ${url}`);
 
-  // --- Serve static files ---
+  // --- Static files ---
   if (url === '/' || url === '/index.html') {
     sendFile(res, path.join(__dirname, 'index.html'), 'text/html');
     return;
   }
-
   if (url === '/style.css') {
     sendFile(res, path.join(__dirname, 'style.css'), 'text/css');
     return;
   }
 
-  // --- API endpoints ---
-
-  // GET /api/books — list all books
+  // --- API: GET all books ---
   if (url === '/api/books' && method === 'GET') {
-    const books = database.getAllBooks();
-    sendJSON(res, books);
-    return;
+    return sendJSON(res, database.getAllBooks());
   }
 
-  // GET /api/books/:id — get one book
-  const bookIdMatch = url.match(/^\/api\/books\/(\d+)$/);
-  if (bookIdMatch && method === 'GET') {
-    const book = database.getBookById(parseInt(bookIdMatch[1]));
-    if (book) {
-      sendJSON(res, book);
-    } else {
-      sendJSON(res, { error: 'Book not found' }, 404);
-    }
-    return;
-  }
-
-  // GET /api/books/:id/notes — get notes for a book
-  const bookNotesMatch = url.match(/^\/api\/books\/(\d+)\/notes$/);
-  if (bookNotesMatch && method === 'GET') {
-    const notes = database.getNotesForBook(parseInt(bookNotesMatch[1]));
-    sendJSON(res, notes);
-    return;
-  }
-
-  // POST /api/books — add a new book
+  // --- API: POST new book ---
   if (url === '/api/books' && method === 'POST') {
     try {
       const body = await parseBody(req);
-      const book = database.addBook(body.title, body.author);
-      sendJSON(res, book, 201);
+      return sendJSON(res, database.addBook(body.title, body.author), 201);
     } catch (e) {
-      sendJSON(res, { error: 'Invalid data' }, 400);
+      return sendJSON(res, { error: 'Invalid data' }, 400);
     }
-    return;
   }
 
-  // POST /api/books/:id/notes — add a note to a book
-  const addNoteMatch = url.match(/^\/api\/books\/(\d+)\/notes$/);
-  if (addNoteMatch && method === 'POST') {
+  // --- API: GET one book by ID ---
+  let m = url.match(/^\/api\/books\/(\d+)$/);
+  if (m && method === 'GET') {
+    const book = database.getBookById(parseInt(m[1]));
+    return book ? sendJSON(res, book) : sendJSON(res, { error: 'Not found' }, 404);
+  }
+
+  // --- API: DELETE book by ID ---
+  if (m && method === 'DELETE') {
+    const removed = database.deleteBook(parseInt(m[1]));
+    return removed
+      ? sendJSON(res, { message: `Deleted "${removed.title}"`, book: removed })
+      : sendJSON(res, { error: 'Not found' }, 404);
+  }
+
+  // --- API: GET notes for a book ---
+  let m2 = url.match(/^\/api\/books\/(\d+)\/notes$/);
+  if (m2 && method === 'GET') {
+    return sendJSON(res, database.getNotesForBook(parseInt(m2[1])));
+  }
+
+  // --- API: POST note for a book ---
+  if (m2 && method === 'POST') {
     try {
       const body = await parseBody(req);
-      const note = database.addNote(parseInt(addNoteMatch[1]), body.text);
-      sendJSON(res, note, 201);
+      return sendJSON(res, database.addNote(parseInt(m2[1]), body.text), 201);
     } catch (e) {
-      sendJSON(res, { error: 'Invalid data' }, 400);
+      return sendJSON(res, { error: 'Invalid data' }, 400);
     }
-    return;
   }
 
-  // PUT /api/books/:id/status — update book status
-  const statusMatch = url.match(/^\/api\/books\/(\d+)\/status$/);
-  if (statusMatch && method === 'PUT') {
+  // --- API: PUT update book status ---
+  let m3 = url.match(/^\/api\/books\/(\d+)\/status$/);
+  if (m3 && method === 'PUT') {
     try {
       const body = await parseBody(req);
-      const book = database.updateBookStatus(parseInt(statusMatch[1]), body.status);
-      sendJSON(res, book);
+      return sendJSON(res, database.updateBookStatus(parseInt(m3[1]), body.status));
     } catch (e) {
-      sendJSON(res, { error: 'Invalid data' }, 400);
+      return sendJSON(res, { error: 'Invalid data' }, 400);
     }
-    return;
   }
 
-  // 404 for everything else
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not found' }));
+  // --- 404 ---
+  sendJSON(res, { error: 'Not found' }, 404);
 }
 
-// Create and start the server
 const server = http.createServer(handleRequest);
 
 server.listen(PORT, () => {
